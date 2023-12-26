@@ -131,21 +131,14 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class kOmegaSSTStab Declaration
+                        Class kOmegaSSTStab Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 class kOmegaSSTStab
 :
-    public TurbulenceModel
+    public MomentumTransportModel
 {
-    // Private Member Functions
-
-        // Disallow default bitwise copy construct and assignment
-        kOmegaSSTStab(const kOmegaSSTStab&);
-        void operator=(const kOmegaSSTStab&);
-
-
 protected:
 
     // Protected data
@@ -172,9 +165,10 @@ protected:
 
             Switch F3_;
 
-  dimensionedScalar alphaBS_;
+            dimensionedScalar alphaBS_;
             dimensionedScalar lambda2_;
             dimensionedScalar pOmegaSmall_;
+
         // Fields
 
             //- Wall distance
@@ -185,7 +179,8 @@ protected:
             volScalarField k_;
             volScalarField omega_;
 
-  uniformDimensionedVectorField gField_;
+            uniformDimensionedVectorField gField_;
+
     // Protected Member Functions
 
         virtual tmp<volScalarField> F1(const volScalarField& CDkOmega) const;
@@ -274,9 +269,9 @@ protected:
 
 public:
 
-    typedef typename BasicTurbulenceModel::alphaField alphaField;
-    typedef typename BasicTurbulenceModel::rhoField rhoField;
-    typedef typename BasicTurbulenceModel::transportModel transportModel;
+    typedef typename BasicMomentumTransportModel::alphaField alphaField;
+    typedef typename BasicMomentumTransportModel::rhoField rhoField;
+    typedef typename BasicMomentumTransportModel::transportModel transportModel;
 
 
     // Constructors
@@ -290,9 +285,11 @@ public:
             const volVectorField& U,
             const surfaceScalarField& alphaRhoPhi,
             const surfaceScalarField& phi,
-            const transportModel& transport,
-            const word& propertiesName = turbulenceModel::propertiesName
+            const transportModel& transport
         );
+
+        //- Disallow default bitwise copy construction
+        kOmegaSSTStab(const kOmegaSSTStab&) = delete;
 
 
     //- Destructor
@@ -308,22 +305,20 @@ public:
         //- Return the effective diffusivity for k
         tmp<volScalarField> DkEff(const volScalarField& F1) const
         {
-            return tmp<volScalarField>
+            return volScalarField::New
             (
-                new volScalarField("DkEff", alphaK(F1)*this->nut_ + this->nu())
+                "DkEff",
+                alphaK(F1)*this->nut_ + this->nu()
             );
         }
 
         //- Return the effective diffusivity for omega
         tmp<volScalarField> DomegaEff(const volScalarField& F1) const
         {
-            return tmp<volScalarField>
+            return volScalarField::New
             (
-                new volScalarField
-                (
-                    "DomegaEff",
-                    alphaOmega(F1)*this->nut_ + this->nu()
-                )
+                "DomegaEff",
+                alphaOmega(F1)*this->nut_ + this->nu()
             );
         }
 
@@ -336,19 +331,11 @@ public:
         //- Return the turbulence kinetic energy dissipation rate
         virtual tmp<volScalarField> epsilon() const
         {
-              return tmp<volScalarField>
+            return volScalarField::New
             (
-                new volScalarField
-                (
-                    IOobject
-                    (
-                        "epsilon",
-                        this->mesh_.time().timeName(),
-                        this->mesh_
-                    ),
-                    betaStar_*k_*omega_,
-                    omega_.boundaryField().types()
-                )
+                "epsilon",
+                betaStar_*k_*omega_,
+                omega_.boundaryField().types()
             );
         }
 
@@ -360,6 +347,12 @@ public:
 
         //- Solve the turbulence equations and correct the turbulence viscosity
         virtual void correct();
+
+
+    // Member Operators
+
+        //- Disallow default bitwise assignment
+        void operator=(const kOmegaSSTStab&) = delete;
 };
 
 

@@ -24,7 +24,8 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "kOmegaSSTStabBase.H"
-#include "fvOptions.H"
+#include "fvModels.H"
+#include "fvConstraints.H"
 #include "bound.H"
 #include "wallDist.H"
 
@@ -35,9 +36,9 @@ namespace Foam
 
 // * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * * //
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F1
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kOmegaSSTStab::F1
 (
     const volScalarField& CDkOmega
 ) const
@@ -45,7 +46,7 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F1
     tmp<volScalarField> CDkOmegaPlus = max
     (
         CDkOmega,
-        dimensionedScalar("1.0e-10", dimless/sqr(dimTime), 1.0e-10)
+        dimensionedScalar(dimless/sqr(dimTime), 1.0e-10)
     );
 
     tmp<volScalarField> arg1 = min
@@ -65,9 +66,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F1
     return tanh(pow4(arg1));
 }
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F2() const
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kOmegaSSTStab::F2() const
 {
     tmp<volScalarField> arg2 = min
     (
@@ -82,9 +83,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F2() const
     return tanh(sqr(arg2));
 }
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F3() const
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kOmegaSSTStab::F3() const
 {
     tmp<volScalarField> arg3 = min
     (
@@ -95,9 +96,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F3() const
     return 1 - tanh(pow4(arg3));
 }
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F23() const
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kOmegaSSTStab::F23() const
 {
     tmp<volScalarField> f23(F2());
 
@@ -110,33 +111,36 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab::F23() const
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-void kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::correctNut
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+void kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::correctNut
 (
     const volScalarField& S2,
     const volScalarField& F2
 )
 {
-  this->nut_ = a1_*k_/max(a1_*lambda2_*beta1_/(betaStar_*gamma1_)*2.0*magSqr(symm(fvc::grad(this->U_)))/(2.0*magSqr(skew(fvc::grad(this->U_)))+pOmegaSmall_)*omega_,max(a1_*omega_, b1_*F2*sqrt(S2))); //nut as suggested by Larsen and Fuhrman 2018
+    this->nut_ =
+        a1_*k_/max
+        (
+            a1_*lambda2_*beta1_/(betaStar_*gamma1_)*2.0*magSqr(symm(fvc::grad(this->U_)))/(2.0*magSqr(skew(fvc::grad(this->U_)))+pOmegaSmall_)*omega_,
+            max(a1_*omega_, b1_*F2*sqrt(S2))
+        ); //nut as suggested by Larsen and Fuhrman 2018
     this->nut_.correctBoundaryConditions();
-    fv::options::New(this->mesh_).correct(this->nut_);
-
-    BasicTurbulenceModel::correctNut();
+    fvConstraints::New(this->mesh_).constrain(this->nut_);
 }
 
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-void kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::correctNut()
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+void kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::correctNut()
 {
     correctNut(2*magSqr(symm(fvc::grad(this->U_))), F23());
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField::Internal>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::Pk
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::Pk
 (
     const volScalarField::Internal& G
 ) const
@@ -145,9 +149,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::Pk
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<volScalarField::Internal>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::epsilonByk
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::epsilonByk
 (
     const volScalarField::Internal& F1,
     const volScalarField::Internal& F2
@@ -157,9 +161,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::epsilonByk
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<fvScalarMatrix>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kSource() const
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kSource() const
 {
     return tmp<fvScalarMatrix>
     (
@@ -172,9 +176,10 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kSource() const
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
 tmp<fvScalarMatrix>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::omegaSource() const
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::
+omegaSource() const
 {
     return tmp<fvScalarMatrix>
     (
@@ -187,8 +192,9 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::omegaSource() const
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-tmp<fvScalarMatrix> kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::Qsas
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+tmp<fvScalarMatrix>
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::Qsas
 (
     const volScalarField::Internal& S2,
     const volScalarField::Internal& gamma,
@@ -208,8 +214,8 @@ tmp<fvScalarMatrix> kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::Qsas
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::kOmegaSSTStab
 (
     const word& type,
     const alphaField& alpha,
@@ -217,11 +223,10 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
     const volVectorField& U,
     const surfaceScalarField& alphaRhoPhi,
     const surfaceScalarField& phi,
-    const transportModel& transport,
-    const word& propertiesName
+    const transportModel& transport
 )
 :
-    TurbulenceModel
+    MomentumTransportModel
     (
         type,
         alpha,
@@ -229,8 +234,7 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
         U,
         alphaRhoPhi,
         phi,
-        transport,
-        propertiesName
+        transport
     ),
 
     alphaK1_
@@ -350,7 +354,7 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
             false
         )
     ),
-  alphaBS_ //Coefficient for the buoyancy production
+    alphaBS_ //Coefficient for the buoyancy production
     (
         dimensioned<scalar>::lookupOrAddToDict
         (
@@ -375,7 +379,7 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
     (
         IOobject
         (
-            IOobject::groupName("k", U.group()),
+            IOobject::groupName("k", alphaRhoPhi.group()),
             this->runTime_.timeName(),
             this->mesh_,
             IOobject::MUST_READ,
@@ -387,7 +391,7 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
     (
         IOobject
         (
-            IOobject::groupName("omega", U.group()),
+            IOobject::groupName("omega", alphaRhoPhi.group()),
             this->runTime_.timeName(),
             this->mesh_,
             IOobject::MUST_READ,
@@ -396,16 +400,16 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
         this->mesh_
      ),
     gField_ //Needed for the buoyancy production term
-(
-IOobject
-(
-"g",
-this->db().time().constant(),
-this->db(),
-IOobject::MUST_READ,
-IOobject::NO_WRITE
-)
- )
+    (
+        IOobject
+        (
+            "g",
+            this->db().time().constant(),
+            this->db(),
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    )
 {
     bound(k_, this->kMin_);
     bound(omega_, this->omegaMin_);
@@ -414,10 +418,10 @@ IOobject::NO_WRITE
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-bool kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::read()
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+bool kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::read()
 {
-    if (TurbulenceModel::read())
+    if (MomentumTransportModel::read())
     {
         alphaK1_.readIfPresent(this->coeffDict());
         alphaK2_.readIfPresent(this->coeffDict());
@@ -444,8 +448,8 @@ bool kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::read()
 }
 
 
-template<class TurbulenceModel, class BasicTurbulenceModel>
-void kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::correct()
+template<class MomentumTransportModel, class BasicMomentumTransportModel>
+void kOmegaSSTStab<MomentumTransportModel, BasicMomentumTransportModel>::correct()
 {
     if (!this->turbulence_)
     {
@@ -457,31 +461,37 @@ void kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::correct()
     // const rhoField& rho = this->rho_;
     //const surfaceScalarField& alphaRhoPhi = this->alphaRhoPhi_;
     const volVectorField& U = this->U_;
- const volScalarField& rho1 = U.db().objectRegistry::lookupObject<volScalarField>("rho");
-const surfaceScalarField& rhoPhi = U.db().objectRegistry::lookupObject<surfaceScalarField>("rhoPhi");
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-// Include density and buoyancy production term. Implemented by Bjarke Eltard Larsen 18-07-2018
+    const volScalarField& rho1 =
+        U.db().objectRegistry::lookupObject<volScalarField>("rho");
+    const surfaceScalarField& rhoPhi =
+        U.db().objectRegistry::lookupObject<surfaceScalarField>("rhoPhi");
+
+    // Include density and buoyancy production term.
+    // Implemented by Bjarke Eltard Larsen 18-07-2018
 
     // Calculate the Brunt-Vaisala frequency
- volScalarField N2 = gField_&fvc::grad(rho1)/rho1;
+    volScalarField N2 = gField_&fvc::grad(rho1)/rho1;
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-// Calculate eddy viscosity using the stabilizing approach described in Larsen and Fuhrman (2018)
+    // Calculate eddy viscosity using the stabilizing approach described in Larsen and Fuhrman (2018)
 
- volScalarField p0 = 2.0*magSqr(symm(fvc::grad(U))); // 2S_ij S_ij
- volScalarField pOmega= 2.0*magSqr(skew(fvc::grad(U))); // 2 Omega_ij Omega_ij
-volScalarField F2(this->F2());
+    volScalarField p0 = 2.0*magSqr(symm(fvc::grad(U))); // 2S_ij S_ij
+    volScalarField pOmega = 2.0*magSqr(skew(fvc::grad(U))); // 2 Omega_ij Omega_ij
+    volScalarField F2(this->F2());
 
- volScalarField nut= a1_*k_/max(a1_*lambda2_*beta1_/(betaStar_*gamma1_)*p0/(pOmega+pOmegaSmall_)*omega_,max(a1_*omega_, b1_*F2*sqrt(p0))); //nut as suggested by Larsen and Fuhrman 2018
- 
+    volScalarField nut =
+        a1_*k_/max
+        (
+            a1_*lambda2_*beta1_/(betaStar_*gamma1_)*p0/(pOmega+pOmegaSmall_)*omega_,
+            max(a1_*omega_, b1_*F2*sqrt(p0))
+        ); //nut as suggested by Larsen and Fuhrman 2018
 
+    const Foam::fvModels& fvModels(Foam::fvModels::New(this->mesh_));
+    const Foam::fvConstraints& fvConstraints
+    (
+        Foam::fvConstraints::New(this->mesh_)
+    );
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-  //   volScalarField& nut = this->nut_;
-    fv::options& fvOptions(fv::options::New(this->mesh_));
-
-    BasicTurbulenceModel::correct();
+    MomentumTransportModel::correct();
 
     volScalarField::Internal divU
     (
@@ -489,7 +499,7 @@ volScalarField F2(this->F2());
     );
 
     tmp<volTensorField> tgradU = fvc::grad(U);
-    volScalarField S2(2.0*magSqr(symm(tgradU())));
+    volScalarField S2(2*magSqr(symm(tgradU())));
     volScalarField::Internal GbyNu(dev(twoSymm(tgradU()())) && tgradU()());
     volScalarField::Internal G(this->GName(), nut()*GbyNu);
     tgradU.clear();
@@ -523,7 +533,7 @@ volScalarField F2(this->F2());
             //    (c1_/a1_)*betaStar_*omega_()
 	    //  *max(a1_*omega_(), b1_*F23()*sqrt(S2()))
 	    // ) BJELT production of omega is not altered in standard SST models
-	     - fvm::SuSp((2.0/3.0)*alpha()*rho1()*gamma*divU, omega_) 
+          - fvm::SuSp((2.0/3.0)*alpha()*rho1()*gamma*divU, omega_) 
           - fvm::Sp(alpha()*rho1()*beta*omega_(), omega_)
           - fvm::SuSp
             (
@@ -532,14 +542,14 @@ volScalarField F2(this->F2());
             )
           + rho1*Qsas(S2(), gamma, beta)
           + rho1*omegaSource()
-          + fvOptions(alpha, rho1, omega_)
+          + fvModels.source(alpha, rho1, omega_)
         );
 
         omegaEqn.ref().relax();
-        fvOptions.constrain(omegaEqn.ref());
+        fvConstraints.constrain(omegaEqn.ref());
         omegaEqn.ref().boundaryManipulate(omega_.boundaryFieldRef());
         solve(omegaEqn);
-        fvOptions.correct(omega_);
+        fvConstraints.constrain(omega_);
         bound(omega_, this->omegaMin_);
     }
 
@@ -551,18 +561,17 @@ volScalarField F2(this->F2());
       - fvm::laplacian(alpha*rho1*DkEff(F1), k_)
      ==
         alpha()*rho1()*Pk(G)
-	 - fvm::SuSp((2.0/3.0)*alpha()*rho1()*divU, k_) 
+      - fvm::SuSp((2.0/3.0)*alpha()*rho1()*divU, k_) 
       - fvm::Sp(alpha()*rho1()*epsilonByk(F1, F23), k_)
- - fvm::Sp(nut*alphaBS_*N2*rho1/max(k_,this->kMin_),k_) // Buoyancy production term
-
+      - fvm::Sp(nut*alphaBS_*N2*rho1/max(k_,this->kMin_),k_) // Buoyancy production term
       + rho1*kSource()
-      + fvOptions(alpha, rho1, k_)
+      + fvModels.source(alpha, rho1, k_)
     );
 
     kEqn.ref().relax();
-    fvOptions.constrain(kEqn.ref());
+    fvConstraints.constrain(kEqn.ref());
     solve(kEqn);
-    fvOptions.correct(k_);
+    fvConstraints.constrain(k_);
     bound(k_, this->kMin_);
 
     correctNut(S2, F23);

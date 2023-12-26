@@ -34,8 +34,8 @@ namespace RASModels
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class BasicTurbulenceModel>
-kOmegaSSTStab<BasicTurbulenceModel>::kOmegaSSTStab
+template<class BasicMomentumTransportModel>
+kOmegaSSTStab<BasicMomentumTransportModel>::kOmegaSSTStab
 (
     const alphaField& alpha,
     const rhoField& rho,
@@ -43,14 +43,13 @@ kOmegaSSTStab<BasicTurbulenceModel>::kOmegaSSTStab
     const surfaceScalarField& alphaRhoPhi,
     const surfaceScalarField& phi,
     const transportModel& transport,
-    const word& propertiesName,
     const word& type
 )
 :
     Foam::kOmegaSSTStab
     <
-        eddyViscosity<RASModel<BasicTurbulenceModel>>,
-        BasicTurbulenceModel
+        eddyViscosity<RASModel<BasicMomentumTransportModel>>,
+        BasicMomentumTransportModel
     >
     (
         type,
@@ -59,8 +58,7 @@ kOmegaSSTStab<BasicTurbulenceModel>::kOmegaSSTStab
         U,
         alphaRhoPhi,
         phi,
-        transport,
-        propertiesName
+        transport
     )
 {
     if (type == typeName)

@@ -53,21 +53,21 @@ namespace RASModels
                           Class kOmegaSSTStab Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class BasicTurbulenceModel>
+template<class BasicMomentumTransportModel>
 class kOmegaSSTStab
 :
     public Foam::kOmegaSSTStab
     <
-        eddyViscosity<RASModel<BasicTurbulenceModel>>,
-        BasicTurbulenceModel
+        eddyViscosity<RASModel<BasicMomentumTransportModel>>,
+        BasicMomentumTransportModel
     >
 {
 
 public:
 
-    typedef typename BasicTurbulenceModel::alphaField alphaField;
-    typedef typename BasicTurbulenceModel::rhoField rhoField;
-    typedef typename BasicTurbulenceModel::transportModel transportModel;
+    typedef typename BasicMomentumTransportModel::alphaField alphaField;
+    typedef typename BasicMomentumTransportModel::rhoField rhoField;
+    typedef typename BasicMomentumTransportModel::transportModel transportModel;
 
 
     //- Runtime type information
@@ -85,7 +85,6 @@ public:
             const surfaceScalarField& alphaRhoPhi,
             const surfaceScalarField& phi,
             const transportModel& transport,
-            const word& propertiesName = turbulenceModel::propertiesName,
             const word& type = typeName
         );
 

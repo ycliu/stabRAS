@@ -23,18 +23,18 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "IncompressibleTurbulenceModel.H"
-#include "transportModel.H"
+#include "IncompressibleMomentumTransportModel.H"
+#include "kinematicTransportModel.H"
 #include "addToRunTimeSelectionTable.H"
-#include "makeTurbulenceModel.H"
+#include "makeMomentumTransportModel.H"
 
-#include "laminar.H"
+#include "laminarModel.H"
 #include "RASModel.H"
 #include "LESModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define createBaseTurbulenceModel(Alpha, Rho, baseModel, BaseModel, Transport)  \
+#define createBaseMomentumTransportModel(Alpha, Rho, baseModel, BaseModel, Transport)  \
                                                                                \
     namespace Foam                                                             \
     {                                                                          \
@@ -43,38 +43,38 @@ License
         typedef LESModel<Transport##BaseModel> LES##Transport##BaseModel;      \
     }   
 
-createBaseTurbulenceModel
+createBaseMomentumTransportModel
 (
     geometricOneField,
     geometricOneField,
-    incompressibleTurbulenceModel,
-    IncompressibleTurbulenceModel,
-    transportModel
+    incompressibleMomentumTransportModel,
+    IncompressibleMomentumTransportModel,
+    kinematicTransportModel
 );
 
 #define makeRASModel(Type)                                                     \
-    makeTemplatedTurbulenceModel                                               \
-    (transportModelIncompressibleTurbulenceModel, RAS, Type)
+    makeTemplatedMomentumTransportModel                                               \
+    (kinematicTransportModelIncompressibleMomentumTransportModel, RAS, Type)
 
 #define makeLESModel(Type)                                                     \
-    makeTemplatedTurbulenceModel                                               \
-    (transportModelIncompressibleTurbulenceModel, LES, Type)
+    makeTemplatedMomentumTransportModel                                               \
+    (kinematicTransportModelIncompressibleMomentumTransportModel, LES, Type)
 
 
 // -------------------------------------------------------------------------- //
 // RAS models
 // -------------------------------------------------------------------------- //
 
-#include "kOmegaStab.H"
-makeRASModel(kOmegaStab);
+//#include "kOmegaStab.H"
+//makeRASModel(kOmegaStab);
 
 #include "kOmegaSSTStab.H"
 makeRASModel(kOmegaSSTStab);
 
-#include "kEpsilonStab.H"
-makeRASModel(kEpsilonStab);
+//#include "kEpsilonStab.H"
+//makeRASModel(kEpsilonStab);
 
-#include "RNGkEpsilonStab.H"
-makeRASModel(RNGkEpsilonStab);
+//#include "RNGkEpsilonStab.H"
+//makeRASModel(RNGkEpsilonStab);
 
 // ************************************************************************* //
