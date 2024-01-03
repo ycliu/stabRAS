@@ -350,6 +350,15 @@ kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::kOmegaSSTStab
             false
         )
     ),
+    buoyancy_
+    (
+        Switch::lookupOrAddToDict
+        (
+            "buoyancy",
+            this->coeffDict_,
+            true
+        )
+    ),
   alphaBS_ //Coefficient for the buoyancy production
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -432,6 +441,7 @@ bool kOmegaSSTStab<TurbulenceModel, BasicTurbulenceModel>::read()
         b1_.readIfPresent(this->coeffDict());
         c1_.readIfPresent(this->coeffDict());
         F3_.readIfPresent("F3", this->coeffDict());
+        buoyancy_.readIfPresent("buoyancy", this->coeffDict());
 	alphaBS_.readIfPresent(this->coeffDict());
 	lambda2_.readIfPresent(this->coeffDict());
 
@@ -553,11 +563,15 @@ volScalarField F2(this->F2());
         alpha()*rho1()*Pk(G)
 	 - fvm::SuSp((2.0/3.0)*alpha()*rho1()*divU, k_) 
       - fvm::Sp(alpha()*rho1()*epsilonByk(F1, F23), k_)
- - fvm::Sp(nut*alphaBS_*N2*rho1/max(k_,this->kMin_),k_) // Buoyancy production term
-
       + rho1*kSource()
       + fvOptions(alpha, rho1, k_)
     );
+
+    if (buoyancy_)
+    {
+        kEqn.ref()
+         += fvm::Sp(nut*alphaBS_*N2*rho1/max(k_,this->kMin_),k_).ref(); // Buoyancy production term
+    }
 
     kEqn.ref().relax();
     fvOptions.constrain(kEqn.ref());

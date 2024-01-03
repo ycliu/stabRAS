@@ -172,6 +172,7 @@ protected:
 
             Switch F3_;
 
+            Switch buoyancy_;
   dimensionedScalar alphaBS_;
             dimensionedScalar lambda2_;
             dimensionedScalar pOmegaSmall_;
